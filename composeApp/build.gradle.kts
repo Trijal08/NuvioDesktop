@@ -693,11 +693,25 @@ val buildMacosPlayerBridge = tasks.register<Exec>("buildMacosPlayerBridge") {
 // Requires a C++ toolchain, pkg-config, and libmpv development files on the
 // build host (all provided by the Nix dev shell).
 val isLinuxHost = System.getProperty("os.name").contains("linux", ignoreCase = true)
+
+fun normalizedLinuxArch(value: String): String =
+    when (value.lowercase()) {
+        "amd64", "x64", "x86_64" -> "x86_64"
+        "aarch64", "arm64" -> "aarch64"
+        else -> value.lowercase()
+    }
+
+// Linux packaging is always host-native: jpackage, the player bridge, and the
+// torrent engine all come from the architecture Gradle is running on.
+val linuxHostArch = normalizedLinuxArch(System.getProperty("os.arch"))
 val linuxPlayerBridgeSource = layout.projectDirectory.file("src/desktopMain/native/linux/player_bridge.cpp")
 val linuxPlayerBridgeOutput = layout.buildDirectory.file("native/linux/libplayer_bridge.so")
 val linuxPlayerBridgeJavaHome = providers.systemProperty("java.home").get()
 val linuxPlayerBridgeSourceFile = linuxPlayerBridgeSource.asFile
 val linuxPlayerBridgeOutputFile = linuxPlayerBridgeOutput.get().asFile
+val linuxEngineLibraryFile = layout.projectDirectory
+    .file("src/desktopMain/native/linux/engine/$linuxHostArch/libnuvio_engine.so")
+    .asFile
 val buildLinuxPlayerBridge = tasks.register<Exec>("buildLinuxPlayerBridge") {
     notCompatibleWithConfigurationCache("Builds a host-local player bridge against system libmpv.")
     enabled = isLinuxHost
@@ -977,8 +991,18 @@ tasks.withType<Jar>().configureEach {
         from(linuxPlayerBridgeOutput) {
             into("native/linux")
         }
-        from(layout.projectDirectory.file("src/desktopMain/native/linux/engine/libnuvio_engine.so")) {
-            into("native/linux")
+        // The engine ships one prebuilt library per architecture. An
+        // architecture without a build packages without P2P support rather
+        // than with a library the host cannot load.
+        if (linuxEngineLibraryFile.isFile) {
+            from(linuxEngineLibraryFile) {
+                into("native/linux")
+            }
+        } else {
+            logger.warn(
+                "No Linux torrent engine library for $linuxHostArch at " +
+                    "${linuxEngineLibraryFile.absolutePath}; packaging without P2P streaming support.",
+            )
         }
     }
 }
@@ -1425,15 +1449,6 @@ fun publishWindowsMsiArtifact(msi: File) {
     logger.lifecycle("Published Windows MSI artifact: ${publishedMsi.absolutePath}")
 }
 
-fun normalizedLinuxArch(value: String): String =
-    when (value.lowercase()) {
-        "amd64", "x64", "x86_64" -> "x86_64"
-        "aarch64", "arm64" -> "aarch64"
-        else -> value.lowercase()
-    }
-
-val linuxAppImageArch = normalizedLinuxArch(System.getProperty("os.arch"))
-
 fun findExecutableOnPath(name: String): File? =
     System.getenv("PATH")
         ?.split(File.pathSeparatorChar)
@@ -1560,7 +1575,7 @@ if (isLinuxHost) {
             ?: System.getenv("APPIMAGE_WEBSITE_URL")?.takeIf { it.isNotBlank() }
 
         val distributionName = if (release) "main-release" else "main"
-        val appImageName = "Nuvio-Linux-$linuxAppImageArch-$desktopReleaseVersionName.AppImage"
+        val appImageName = "Nuvio-Linux-$linuxHostArch-$desktopReleaseVersionName.AppImage"
         val outputAppImage = layout.buildDirectory
             .dir("compose/binaries/$distributionName/app")
             .get()

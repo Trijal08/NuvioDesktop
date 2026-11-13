@@ -579,16 +579,25 @@ jobs:
           retention-days: 14
 
   linux_flatpak:
-    name: Linux x64 - Flatpak
+    name: Linux ${{ matrix.arch }} - Flatpak
     if: inputs.mode != 'dry-run' && (inputs.target == 'all' || inputs.target == 'linux')
     needs: metadata
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     environment: desktop-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
     env:
       LOCAL_PROPERTIES_BASE64: ${{ secrets.NUVIO_DESKTOP_LOCAL_PROPERTIES_BASE64 }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_DESKTOP_DSN: ${{ secrets.SENTRY_DESKTOP_DSN }}
       RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+      LINUX_ARCH: ${{ matrix.arch }}
 
     steps:
       - name: Check out release source
@@ -690,13 +699,13 @@ jobs:
           sed -i "s|\${app_root}|${app_root}|g" flatpak/nuvio-flatpak.yml
           
           flatpak-builder --repo=flatpak-repo --force-clean flatpak-build flatpak/nuvio-flatpak.yml
-          flatpak build-bundle flatpak-repo "Nuvio-Linux-x86_64-${RELEASE_VERSION}.flatpak" com.nuvio.media.desktop
+          flatpak build-bundle flatpak-repo "Nuvio-Linux-${LINUX_ARCH}-${RELEASE_VERSION}.flatpak" com.nuvio.media.desktop
 
       - name: Verify Flatpak
         shell: bash
         run: |
           set -euo pipefail
-          flatpak_path="Nuvio-Linux-x86_64-${RELEASE_VERSION}.flatpak"
+          flatpak_path="Nuvio-Linux-${LINUX_ARCH}-${RELEASE_VERSION}.flatpak"
           if [[ ! -f "${flatpak_path}" ]]; then
             echo "Expected Flatpak bundle was not produced: ${flatpak_path}" >&2
             exit 1
@@ -706,23 +715,32 @@ jobs:
       - name: Upload Flatpak
         uses: actions/upload-artifact@v7
         with:
-          name: nuvio-desktop-${{ needs.metadata.outputs.version }}-linux-flatpak
-          path: Nuvio-Linux-x86_64-${{ needs.metadata.outputs.version }}.flatpak
+          name: nuvio-desktop-${{ needs.metadata.outputs.version }}-linux-${{ matrix.arch }}-flatpak
+          path: Nuvio-Linux-${{ matrix.arch }}-${{ needs.metadata.outputs.version }}.flatpak
           if-no-files-found: error
           retention-days: 14
 
   linux_deb:
-    name: Linux x64 - DEB
+    name: Linux ${{ matrix.arch }} - DEB
     if: inputs.mode != 'dry-run' && (inputs.target == 'all' || inputs.target == 'linux')
     needs:
       - metadata
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     environment: desktop-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
     env:
       LOCAL_PROPERTIES_BASE64: ${{ secrets.NUVIO_DESKTOP_LOCAL_PROPERTIES_BASE64 }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_DESKTOP_DSN: ${{ secrets.SENTRY_DESKTOP_DSN }}
       RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+      LINUX_ARCH: ${{ matrix.arch }}
 
     steps:
       - name: Check out release source
@@ -772,13 +790,13 @@ jobs:
             exit 1
           fi
 
-          cp "${debs[0]}" "Nuvio-Linux-x86_64-${RELEASE_VERSION}.deb"
+          cp "${debs[0]}" "Nuvio-Linux-${LINUX_ARCH}-${RELEASE_VERSION}.deb"
 
       - name: Verify DEB
         shell: bash
         run: |
           set -euo pipefail
-          deb_path="Nuvio-Linux-x86_64-${RELEASE_VERSION}.deb"
+          deb_path="Nuvio-Linux-${LINUX_ARCH}-${RELEASE_VERSION}.deb"
           if [[ ! -f "${deb_path}" ]]; then
             echo "Expected DEB package was not produced: ${deb_path}" >&2
             exit 1
@@ -789,23 +807,32 @@ jobs:
       - name: Upload DEB
         uses: actions/upload-artifact@v7
         with:
-          name: nuvio-desktop-${{ needs.metadata.outputs.version }}-linux-deb
-          path: Nuvio-Linux-x86_64-${{ needs.metadata.outputs.version }}.deb
+          name: nuvio-desktop-${{ needs.metadata.outputs.version }}-linux-${{ matrix.arch }}-deb
+          path: Nuvio-Linux-${{ matrix.arch }}-${{ needs.metadata.outputs.version }}.deb
           if-no-files-found: error
           retention-days: 14
 
   linux_rpm:
-    name: Linux x64 - RPM
+    name: Linux ${{ matrix.arch }} - RPM
     if: inputs.mode != 'dry-run' && (inputs.target == 'all' || inputs.target == 'linux')
     needs:
       - metadata
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     environment: desktop-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
     env:
       LOCAL_PROPERTIES_BASE64: ${{ secrets.NUVIO_DESKTOP_LOCAL_PROPERTIES_BASE64 }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_DESKTOP_DSN: ${{ secrets.SENTRY_DESKTOP_DSN }}
       RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+      LINUX_ARCH: ${{ matrix.arch }}
 
     steps:
       - name: Check out release source
@@ -855,13 +882,13 @@ jobs:
             exit 1
           fi
 
-          cp "${rpms[0]}" "Nuvio-Linux-x86_64-${RELEASE_VERSION}.rpm"
+          cp "${rpms[0]}" "Nuvio-Linux-${LINUX_ARCH}-${RELEASE_VERSION}.rpm"
 
       - name: Verify RPM
         shell: bash
         run: |
           set -euo pipefail
-          rpm_path="Nuvio-Linux-x86_64-${RELEASE_VERSION}.rpm"
+          rpm_path="Nuvio-Linux-${LINUX_ARCH}-${RELEASE_VERSION}.rpm"
           if [[ ! -f "${rpm_path}" ]]; then
             echo "Expected RPM package was not produced: ${rpm_path}" >&2
             exit 1
@@ -872,25 +899,36 @@ jobs:
       - name: Upload RPM
         uses: actions/upload-artifact@v7
         with:
-          name: nuvio-desktop-${{ needs.metadata.outputs.version }}-linux-rpm
-          path: Nuvio-Linux-x86_64-${{ needs.metadata.outputs.version }}.rpm
+          name: nuvio-desktop-${{ needs.metadata.outputs.version }}-linux-${{ matrix.arch }}-rpm
+          path: Nuvio-Linux-${{ matrix.arch }}-${{ needs.metadata.outputs.version }}.rpm
           if-no-files-found: error
           retention-days: 14
 
   linux_appimage:
-    name: Linux x64 - AppImage
+    name: Linux ${{ matrix.arch }} - AppImage
     if: inputs.mode != 'dry-run' && (inputs.target == 'all' || inputs.target == 'linux')
     needs:
       - metadata
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     environment: desktop-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: x86_64
+            appimagetool_sha256: ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
+            appimagetool_sha256: f0837e7448a0c1e4e650a93bb3e85802546e60654ef287576f46c71c126a9158
     env:
       LOCAL_PROPERTIES_BASE64: ${{ secrets.NUVIO_DESKTOP_LOCAL_PROPERTIES_BASE64 }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_DESKTOP_DSN: ${{ secrets.SENTRY_DESKTOP_DSN }}
       RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+      LINUX_ARCH: ${{ matrix.arch }}
       APPIMAGE_TOOL_VERSION: 1.9.1
-      APPIMAGETOOL_SHA256: ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
+      APPIMAGETOOL_SHA256: ${{ matrix.appimagetool_sha256 }}
 
     steps:
       - name: Check out release source
@@ -919,9 +957,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          appimagetool_path="${RUNNER_TEMP}/appimagetool-x86_64.AppImage"
+          appimagetool_path="${RUNNER_TEMP}/appimagetool-${LINUX_ARCH}.AppImage"
           curl -fsSL -o "${appimagetool_path}" \
-            "https://github.com/AppImage/appimagetool/releases/download/${APPIMAGE_TOOL_VERSION}/appimagetool-x86_64.AppImage"
+            "https://github.com/AppImage/appimagetool/releases/download/${APPIMAGE_TOOL_VERSION}/appimagetool-${LINUX_ARCH}.AppImage"
             
           actual_sha256="$(sha256sum "${appimagetool_path}" | awk '{print $1}')"
           if [[ "${actual_sha256}" != "${APPIMAGETOOL_SHA256}" ]]; then
@@ -935,7 +973,7 @@ jobs:
 
           repo_owner="${GITHUB_REPOSITORY%%/*}"
           repo_name="${GITHUB_REPOSITORY#*/}"
-          update_information="gh-releases-zsync|${repo_owner}|${repo_name}|latest|Nuvio-Linux-x86_64-*.AppImage.zsync"
+          update_information="gh-releases-zsync|${repo_owner}|${repo_name}|latest|Nuvio-Linux-${LINUX_ARCH}-*.AppImage.zsync"
 
           export APPIMAGETOOL="${appimagetool_path}"
           export APPIMAGE_WEBSITE_URL="https://github.com/NuvioMedia/NuvioDesktop"
@@ -960,24 +998,24 @@ jobs:
             exit 1
           fi
 
-          appimage_path="${appimage_dir}/Nuvio-Linux-x86_64-${RELEASE_VERSION}.AppImage"
+          appimage_path="${appimage_dir}/Nuvio-Linux-${LINUX_ARCH}-${RELEASE_VERSION}.AppImage"
           if [[ ! -f "${appimage_path}" ]]; then
             echo "Expected AppImage artifact was not produced: ${appimage_path}" >&2
             find "${appimage_dir}" -maxdepth 4 -type f | sort >&2 || true
             exit 1
           fi
 
-          cp "${appimage_path}" "Nuvio-Linux-x86_64-${RELEASE_VERSION}.AppImage"
-          chmod +x "Nuvio-Linux-x86_64-${RELEASE_VERSION}.AppImage"
+          cp "${appimage_path}" "Nuvio-Linux-${LINUX_ARCH}-${RELEASE_VERSION}.AppImage"
+          chmod +x "Nuvio-Linux-${LINUX_ARCH}-${RELEASE_VERSION}.AppImage"
 
-          zsyncmake "Nuvio-Linux-x86_64-${RELEASE_VERSION}.AppImage"
+          zsyncmake "Nuvio-Linux-${LINUX_ARCH}-${RELEASE_VERSION}.AppImage"
 
       - name: Verify AppImage
         shell: bash
         run: |
           set -euo pipefail
-          appimage_path="Nuvio-Linux-x86_64-${RELEASE_VERSION}.AppImage"
-          zsync_path="Nuvio-Linux-x86_64-${RELEASE_VERSION}.AppImage.zsync"
+          appimage_path="Nuvio-Linux-${LINUX_ARCH}-${RELEASE_VERSION}.AppImage"
+          zsync_path="Nuvio-Linux-${LINUX_ARCH}-${RELEASE_VERSION}.AppImage.zsync"
           if [[ ! -f "${appimage_path}" ]]; then
             echo "Expected AppImage package was not produced: ${appimage_path}" >&2
             exit 1
@@ -1007,10 +1045,10 @@ jobs:
       - name: Upload AppImage
         uses: actions/upload-artifact@v7
         with:
-          name: nuvio-desktop-${{ needs.metadata.outputs.version }}-linux-appimage
+          name: nuvio-desktop-${{ needs.metadata.outputs.version }}-linux-${{ matrix.arch }}-appimage
           path: |
-            Nuvio-Linux-x86_64-${{ needs.metadata.outputs.version }}.AppImage
-            Nuvio-Linux-x86_64-${{ needs.metadata.outputs.version }}.AppImage.zsync
+            Nuvio-Linux-${{ matrix.arch }}-${{ needs.metadata.outputs.version }}.AppImage
+            Nuvio-Linux-${{ matrix.arch }}-${{ needs.metadata.outputs.version }}.AppImage.zsync
           if-no-files-found: error
           retention-days: 14
 
@@ -1052,6 +1090,11 @@ jobs:
             "release/Nuvio-Linux-x86_64-${RELEASE_VERSION}.rpm"
             "release/Nuvio-Linux-x86_64-${RELEASE_VERSION}.AppImage"
             "release/Nuvio-Linux-x86_64-${RELEASE_VERSION}.AppImage.zsync"
+            "release/Nuvio-Linux-aarch64-${RELEASE_VERSION}.flatpak"
+            "release/Nuvio-Linux-aarch64-${RELEASE_VERSION}.deb"
+            "release/Nuvio-Linux-aarch64-${RELEASE_VERSION}.rpm"
+            "release/Nuvio-Linux-aarch64-${RELEASE_VERSION}.AppImage"
+            "release/Nuvio-Linux-aarch64-${RELEASE_VERSION}.AppImage.zsync"
           )
           if [[ ! -s release/release-notes.md ]]; then
             echo "Release notes are missing." >&2
@@ -1081,6 +1124,11 @@ jobs:
             "release/Nuvio-Linux-x86_64-${RELEASE_VERSION}.rpm"
             "release/Nuvio-Linux-x86_64-${RELEASE_VERSION}.AppImage"
             "release/Nuvio-Linux-x86_64-${RELEASE_VERSION}.AppImage.zsync"
+            "release/Nuvio-Linux-aarch64-${RELEASE_VERSION}.flatpak"
+            "release/Nuvio-Linux-aarch64-${RELEASE_VERSION}.deb"
+            "release/Nuvio-Linux-aarch64-${RELEASE_VERSION}.rpm"
+            "release/Nuvio-Linux-aarch64-${RELEASE_VERSION}.AppImage"
+            "release/Nuvio-Linux-aarch64-${RELEASE_VERSION}.AppImage.zsync"
             "release/SHA256SUMS.txt"
           )
           release_args=(

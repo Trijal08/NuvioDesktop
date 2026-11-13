@@ -47,6 +47,16 @@ modules:
           - /include
           - /lib/pkgconfig
         buildsystem: meson
+        # NVIDIA interop and VDPAU are only dependable on x86_64 runtimes, so
+        # they are requested per architecture instead of unconditionally.
+        build-options:
+          arch:
+            x86_64:
+              config-opts:
+                - -Dcuda-hwaccel=enabled
+                - -Dcuda-interop=enabled
+                - -Dvdpau=enabled
+                - -Dvdpau-gl-x11=enabled
         config-opts:
           - -Dbuild-date=false
           - -Dcplayer=false
@@ -62,10 +72,6 @@ modules:
           - -Dvaapi=enabled
           - -Dvaapi-wayland=enabled
           - -Dvaapi-x11=enabled
-          - -Dcuda-hwaccel=enabled
-          - -Dcuda-interop=enabled
-          - -Dvdpau=enabled
-          - -Dvdpau-gl-x11=enabled
         sources:
           - type: archive
             url: https://github.com/mpv-player/mpv/archive/refs/tags/v0.41.0.tar.gz

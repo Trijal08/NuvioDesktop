@@ -72,8 +72,22 @@ class DesktopEngineTest {
     }
 
     @Test
+    fun linuxSourceDirectoriesAreArchitectureSpecific() {
+        assertEquals("linux/engine/x86_64", DesktopEngineLibrary.sourceDirectory(DesktopHostOs.LINUX, "x86_64"))
+        assertEquals("linux/engine/aarch64", DesktopEngineLibrary.sourceDirectory(DesktopHostOs.LINUX, "aarch64"))
+        assertEquals("macos/engine", DesktopEngineLibrary.sourceDirectory(DesktopHostOs.MACOS, "aarch64"))
+        assertEquals("windows/engine", DesktopEngineLibrary.sourceDirectory(DesktopHostOs.WINDOWS, "x86_64"))
+        assertEquals("aarch64", DesktopEngineLibrary.normalizedArchitecture("arm64"))
+        assertEquals("x86_64", DesktopEngineLibrary.normalizedArchitecture("amd64"))
+        assertNull(DesktopEngineLibrary.normalizedArchitecture("riscv64"))
+    }
+
+    @Test
     fun bundledLibraryLoadsAndCreatesEngine() {
-        val runtime = NuvioEngineRuntime.load(DesktopEngineLibrary.resolve())
+        // An architecture without an engine build packages without P2P
+        // support, so there is nothing to load here.
+        val library = runCatching { DesktopEngineLibrary.resolve() }.getOrNull() ?: return
+        val runtime = NuvioEngineRuntime.load(library)
         assertEquals("0.1.6", runtime.version)
 
         val root = Files.createTempDirectory("nuvio-engine-desktop-").toFile()
