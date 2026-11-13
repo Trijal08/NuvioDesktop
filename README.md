@@ -24,7 +24,7 @@ Download the latest build from [GitHub Releases](https://github.com/NuvioMedia/N
 
 - Windows: MSI installer
 - macOS: DMG installer
-- Linux: DEB, RPM, Flatpak, or AppImage
+- Linux (x86_64 and arm64): DEB, RPM, Flatpak, or AppImage
 
 ## Build from source
 

@@ -50,6 +50,20 @@ if [[ ! -d "$app_root" ]]; then
     exit 1
 fi
 
+# appimagetool labels the runtime it embeds, so it has to be told which
+# architecture the app image it is given was built for.
+appimage_arch="${NUVIO_APPIMAGE_ARCH:-}"
+if [[ -z "$appimage_arch" ]]; then
+    case "$(uname -m)" in
+        x86_64 | amd64) appimage_arch=x86_64 ;;
+        aarch64 | arm64) appimage_arch=aarch64 ;;
+        *)
+            echo "Unsupported AppImage architecture: $(uname -m)" >&2
+            exit 1
+            ;;
+    esac
+fi
+
 if [[ ! -x "$appimagetool_path" ]]; then
     echo "appimagetool is not executable: $appimagetool_path" >&2
     exit 1
@@ -104,7 +118,7 @@ if [[ -n "$update_information" ]]; then
     appimagetool_args=("-u" "$update_information" "${appimagetool_args[@]}")
 fi
 
-ARCH=x86_64 "$appimagetool_path" --appimage-extract-and-run "${appimagetool_args[@]}"
+ARCH="$appimage_arch" "$appimagetool_path" --appimage-extract-and-run "${appimagetool_args[@]}"
 
 if [[ ! -f "$output_appimage" ]]; then
     echo "Expected AppImage output was not produced: $output_appimage" >&2
