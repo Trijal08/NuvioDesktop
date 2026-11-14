@@ -85,6 +85,9 @@ internal fun MainTabsDestination(
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenWidth = maxWidth
+        // Navigation chrome follows the window width, not the platform: a narrow
+        // desktop window and a handheld running the desktop build are the same
+        // layout problem, so both get the compact mobile chrome.
         val isTabletLayout = useTabletFloatingTabBar || screenWidth >= 768.dp
         val tabActions = remember(actions, isTabletLayout) { actions(isTabletLayout) }
         val useNativeBottomTabs = if (useNativeNavigation) {
@@ -96,7 +99,10 @@ internal fun MainTabsDestination(
             isTabletLayout &&
             !useNativeBottomTabs &&
             desktopNavigationLayout == DesktopNavigationLayout.Sidebar
-        val useDesktopTopBar = isDesktop && !useNativeBottomTabs && !useDesktopSidebar
+        val useDesktopTopBar = isDesktop &&
+            isTabletLayout &&
+            !useNativeBottomTabs &&
+            !useDesktopSidebar
         val useFloatingTopBar = !isDesktop && isTabletLayout && !useNativeBottomTabs
         val topChromePadding = if (useFloatingTopBar || useDesktopTopBar) {
             val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -173,7 +179,7 @@ internal fun MainTabsDestination(
                         hazeState = navBarHazeState,
                         onPopupStateChanged = { isTopProfileSwitcherOpen = it },
                         avatarSize = if (isDesktop && screenWidth < 800.dp) 26 else if (isDesktop && screenWidth > 1600.dp) 30 else 28,
-                        popupBelowAnchor = isDesktop || isTabletLayout,
+                        popupBelowAnchor = isTabletLayout,
                     )
                 },
             ),
@@ -186,7 +192,7 @@ internal fun MainTabsDestination(
             containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
-                if (!isDesktop && !isTabletLayout && !useNativeBottomTabs && navBarStyleSetting == NavBarStyle.CLASSIC) {
+                if (!isTabletLayout && !useNativeBottomTabs && navBarStyleSetting == NavBarStyle.CLASSIC) {
                     NuvioClassicNavigationBar {
                         NavItem(
                             selected = selectedTab == AppScreenTab.Home,
@@ -229,13 +235,13 @@ internal fun MainTabsDestination(
                 } else {
                     !useNativeBottomTabs && navBarStyleSetting != NavBarStyle.CLASSIC
                 }
-                val shouldAttachNestedScroll = if (isDesktop || isTabletLayout) {
+                val shouldAttachNestedScroll = if (isTabletLayout) {
                     true
                 } else {
                     navBarStyleSetting == NavBarStyle.ADAPTIVE
                 }
                 CompositionLocalProvider(
-                    LocalNuvioBottomNavigationOverlayPadding provides if (useNativeBottomTabs) 49.dp else if (!isDesktop && !isTabletLayout && navBarStyleSetting != NavBarStyle.CLASSIC) 72.dp else 0.dp,
+                    LocalNuvioBottomNavigationOverlayPadding provides if (useNativeBottomTabs) 49.dp else if (!isTabletLayout && navBarStyleSetting != NavBarStyle.CLASSIC) 72.dp else 0.dp,
                     LocalNuvioNavBarScrollState provides navBarScrollState,
                 ) {
                     AppTabHost(
@@ -318,7 +324,7 @@ internal fun MainTabsDestination(
                     )
                 }
 
-                if (!isDesktop && !isTabletLayout && !useNativeBottomTabs && navBarStyleSetting != NavBarStyle.CLASSIC) {
+                if (!isTabletLayout && !useNativeBottomTabs && navBarStyleSetting != NavBarStyle.CLASSIC) {
                     when (navBarStyleSetting) {
                         NavBarStyle.EXPANDED -> navBarScrollState.expand()
                         NavBarStyle.COMPACT -> navBarScrollState.collapse()
