@@ -627,7 +627,6 @@ jobs:
           set -euo pipefail
           ./gradlew \
             :composeApp:createReleaseDistributable \
-            :desktopSentry:sentryUploadSourceBundleJava \
             -Pcompose.desktop.packaging.checkJdkVendor=false \
             --no-configuration-cache \
             --no-daemon \
@@ -770,7 +769,6 @@ jobs:
           set -euo pipefail
           ./gradlew \
             :composeApp:packageReleaseDeb \
-            :desktopSentry:sentryUploadSourceBundleJava \
             -Pcompose.desktop.packaging.checkJdkVendor=false \
             --no-configuration-cache \
             --no-daemon \
@@ -862,7 +860,6 @@ jobs:
           set -euo pipefail
           ./gradlew \
             :composeApp:packageReleaseRpm \
-            :desktopSentry:sentryUploadSourceBundleJava \
             -Pcompose.desktop.packaging.checkJdkVendor=false \
             --no-configuration-cache \
             --no-daemon \
@@ -985,7 +982,6 @@ jobs:
 
           ./gradlew \
             :composeApp:packageReleaseAppImage \
-            :desktopSentry:sentryUploadSourceBundleJava \
             -Pcompose.desktop.packaging.checkJdkVendor=false \
             --no-configuration-cache \
             --no-daemon \
